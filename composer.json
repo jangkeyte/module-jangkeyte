@@ -1,0 +1,21 @@
+{
+    "name": "jangkeyte/jangkeyte",
+    "description": "The main config for other modules",
+    "type": "php",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jang Keyte",
+            "email": "jangkeyte@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.0",
+    },
+    "autoload": {
+        "psr-4": {
+            "jangkeyte\\JangKeyte\\": "src/"
+        }
+    }
+}
