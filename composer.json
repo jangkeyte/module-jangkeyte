@@ -1,7 +1,8 @@
 {
     "name": "jangkeyte/jangkeyte",
+    "type": "package",
     "description": "The main config for other modules",
-    "type": "php",
+    "keywords": ["module", "package"],
     "license": "MIT",
     "authors": [
         {
@@ -9,13 +10,13 @@
             "email": "jangkeyte@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {
-        "php": "^7.0"
+        "php": "^8.1"
     },
     "autoload": {
         "psr-4": {
-            "jangkeyte\\JangKeyte\\": "src/"
+            "Modules\\": "vendor/jangkeyte/"
         }
     }
 }
