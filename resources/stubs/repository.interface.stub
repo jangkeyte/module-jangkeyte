@@ -1,0 +1,10 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Repositories\{{ MODELNAME }};
+
+use Modules\{{ MODULENAME }}\src\Repositories\RepositoryInterface;
+
+interface {{ MODELNAME }}RepositoryInterface extends RepositoryInterface
+{
+    public function update($request);
+}

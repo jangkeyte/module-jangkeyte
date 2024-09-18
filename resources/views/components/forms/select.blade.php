@@ -4,7 +4,7 @@
         {{ html()->label("<i class='" . $icon . "'></i>")->for($name)->class('input-group-text') }}  
     @endisset
     <div class="form-floating is-invalid">
-        {{ html()->select($name)->options($options ?? array( '' => 'Tất cả' ))->value(old( $name ) ?? $value )->class('form-select')->disabled($disabled) }}
+        {{ html()->select($name)->options($options ?? array( '' => 'Tất cả' ))->value(old( $name ) ?? $value )->class('form-select')->disabled($disabled ?? '') }}
         {{ html()->label($label ?? '')->for($name) }}  
     </div>
     @if($errors->has($name))

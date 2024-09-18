@@ -2,7 +2,7 @@
 
 namespace Modules\JangKeyte\src\Filters;
 
-use App\Helpers\Common\StringHelper;
+use Modules\JangKeyte\src\Helpers\Common\StringHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -32,7 +32,7 @@ class QueryFilter
     /**
      * @var string|null
      */
-    protected $orderField = null;
+    protected $orderFields = null;
 
     /**
      * @var string

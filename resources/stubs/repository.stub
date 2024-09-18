@@ -1,0 +1,42 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Repositories\{{ MODELNAME }};
+
+use Modules\{{ MODULENAME }}\src\Models\{{ MODELNAME }};
+use Modules\{{ MODULENAME }}\src\Filters\{{ MODELNAME }}Filter;
+use Modules\{{ MODULENAME }}\src\Repositories\BaseRepository;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class {{ MODELNAME }}Repository extends BaseRepository implements {{ MODELNAME }}RepositoryInterface
+{
+    protected $model;
+
+    public function __construct({{ MODELNAME }} $model)
+    {
+        parent::__construct($model);
+    }
+
+    public function update($request)
+    {
+        $obj = $this->model->where('id', $request->id)->firstOrNew();
+
+        if($request->hasFile('image')) {
+
+            if(is_file(public_path('storage/uploads/{{ MODEL }}/' . $obj->image))) {
+                unlink(public_path('storage/uploads/{{ MODEL }}/' . $obj->image));
+            }
+
+            $ext = $request->file('image')->extension();
+            $final_name = '{{ MODEL }}_' . time() . '.' . $ext;
+
+            $request->file('image')->move(public_path('storage/uploads/{{ MODEL }}s/'), $final_name);
+
+            $obj->image = $final_name;
+        }
+
+        {{ CODE }}
+        $obj->save();
+    }
+}

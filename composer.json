@@ -1,7 +1,7 @@
 {
     "name": "jangkeyte/jangkeyte",
     "type": "package",
-    "description": "The main config for other modules",
+    "description": "The basic module for build layout and base config of Jang Keyte",
     "keywords": ["module", "package"],
     "license": "MIT",
     "authors": [
@@ -11,11 +11,14 @@
         }
     ],
     "require": {
-        "php": "^8.1"
+        "php": "^8.1",
+        "jangkeyte/jangkeyte": "1.0"
     },
     "autoload": {
         "psr-4": {
-            "Modules\\": "vendor/jangkeyte/"
+            "Modules\\JangKeyte": "/",
+            "Modules\\JangKeyte\\Database\\Factories\\": "database/factories/",
+            "Modules\\JangKeyte\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "minimum-stability": "stable",
