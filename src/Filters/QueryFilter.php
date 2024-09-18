@@ -1,8 +1,8 @@
 <?php
 
-namespace Modules\JangKeyte\src\Filters;
+namespace Modules\Authetication\src\Filters;
 
-use Modules\JangKeyte\src\Helpers\Common\StringHelper;
+use Modules\Authetication\src\Helpers\Common\StringHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

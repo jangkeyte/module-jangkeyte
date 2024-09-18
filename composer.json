@@ -1,7 +1,7 @@
 {
-    "name": "jangkeyte/jangkeyte",
+    "name": "jangkeyte/authetication",
     "type": "package",
-    "description": "The basic module for build layout and base config of Jang Keyte",
+    "description": "The authetication module with roles and permission",
     "keywords": ["module", "package"],
     "license": "MIT",
     "authors": [
@@ -16,9 +16,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Modules\\JangKeyte": "/",
-            "Modules\\JangKeyte\\Database\\Factories\\": "database/factories/",
-            "Modules\\JangKeyte\\Database\\Seeders\\": "database/seeders/"
+            "Modules\\Authetication\\Database\\Factories\\": "database/factories/",
+            "Modules\\Authetication\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "minimum-stability": "stable",

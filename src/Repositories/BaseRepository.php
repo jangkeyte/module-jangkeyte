@@ -1,13 +1,13 @@
 <?php
 
-namespace Modules\JangKeyte\src\Repositories;
+namespace Modules\Authetication\src\Repositories;
 
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class BaseRepository
  *
- * @package Modules\JangKeyte\src\Repositories
+ * @package App\Repositories
  */
 class BaseRepository implements RepositoryInterface
 {
@@ -42,7 +42,7 @@ class BaseRepository implements RepositoryInterface
      */
     public function find($id)
     {
-        return $this->model->where('id', $id)->firstOrNew();
+        return $this->model->where('id', $id)->first();
     }
 
     /**
@@ -61,9 +61,9 @@ class BaseRepository implements RepositoryInterface
      * @param array $data
      * @return mixed
      */
-    public function update($request)
+    public function update($id, array $data)
     {
-        return $this->model->find($request->id)->update($request->all());
+        return $this->model->find($id)->update($data);
     }
     
     /**
