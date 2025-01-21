@@ -533,7 +533,7 @@ class JangKeyteCommand extends Command
                 $headerColumn = ucfirst($column);
                 $heading .= ($heading == '') ? "<th>{{ __('$headerColumn') }}</th>" : "\n                                    <th>{{ __('$headerColumn') }}</th>";
                 if ($type == 'file') {
-                    $body .= ($body == '') ? "<td><img src='{{ asset('storage/uploads/$models/' . (\$item->image ?? 'default.png')) }}' alt='' style='height:100px'></td>" : "\n                                    <td><img src='{{ asset('storage/uploads/$models/' . (\$item->image ?? 'default.png')) }}' alt='' style='height:100px'></td>";
+                    $body .= ($body == '') ? "<td>{{ asset('storage/uploads/$models/' . (\$item->image ?? 'default.png')) }}</td>" : "\n                                    <td><img src='{{ asset('storage/uploads/$models/' . (\$item->image ?? 'default.png')) }}' alt='' style='height:100px'></td>";
                 } else {
                     $body .= ($body == '') ? "<td>{{ \$item->$column }}</td>" : "\n                                    <td>{{ \$item->$column }}</td>";
                 }
