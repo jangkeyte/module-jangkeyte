@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Authetication\src\Http\Requests;
+namespace Modules\JangKeyte\src\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -15,8 +15,8 @@ abstract class BaseFormRequest extends FormRequest
      * @return array
      */
     public function rules() {
-        return [ 
-                    
+        return [
+
         ]; 
     }
 
@@ -28,17 +28,14 @@ abstract class BaseFormRequest extends FormRequest
     public function messages()
     {
          return [
-            'name' => 'Tên người dùng không được để trống',
-            'email' => 'Địa chỉ email không được để trống',
-            'image' => 'Hình ảnh phải có dạng: .jpg, .png, .jpeg',
+            
          ];
     }
     
    public function filters()
    {
        return [
-           'email' => 'trim|lowercase',
-           'name' => 'trim|capitalize|escape'
+        
        ];
    }
    

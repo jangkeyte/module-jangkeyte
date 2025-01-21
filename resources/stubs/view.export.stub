@@ -1,0 +1,18 @@
+<div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                {{ HEADING }}
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($data as $item)
+            <tr>
+                <td>{{ $loop->iteration }}</td>
+                {{ BODY }}
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>

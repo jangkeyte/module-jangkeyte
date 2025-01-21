@@ -1,0 +1,34 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Http\Controllers\{{ MODELNAME }};
+
+use App\Http\Controllers\Controller;
+use Modules\{{ MODULENAME }}\src\Models\{{ MODELNAME }};
+use Modules\{{ MODULENAME }}\src\Repositories\{{ MODELNAME }}\{{ MODELNAME }}RepositoryInterface;
+
+class {{ MODELNAME }}Controller extends Controller
+{
+    private ${{ MODEL }}Repository;
+
+    public function __construct({{ MODELNAME }}RepositoryInterface ${{ MODEL }}Repository)
+    {
+        $this->{{ MODEL }}Repository = ${{ MODEL }}Repository;
+    }
+
+    public function index()
+    {
+        $datas = $this->{{ MODEL }}Repository->all();
+        return view('{{ MODULENAME }}::{{ MODEL }}.index', compact('datas'));
+    }
+
+    public function destroy($id)
+    {
+        $this->{{ MODEL }}Repository->delete($id);
+        return redirect()->route('{{ MODEL }}_index')->with('success', __('Data is deleted successfully.'));
+    }
+
+    public function export() 
+    {
+        return $this->{{ MODEL }}Repository->export();
+    }
+}

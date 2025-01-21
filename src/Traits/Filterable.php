@@ -1,8 +1,8 @@
 <?php
 
-namespace Modules\Authetication\src\Traits;
+namespace Modules\JangKeyte\src\Traits;
 
-use Modules\Authetication\src\Filters\QueryFilter;
+use Modules\JangKeyte\src\Filters\QueryFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 trait Filterable

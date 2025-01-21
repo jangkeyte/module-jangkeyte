@@ -1,0 +1,21 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Filters;
+
+use Illuminate\Support\Facades\Route;
+
+class {{ MODELNAME }}Filter extends QueryFilter
+{
+    protected $filterable = [
+        {{ FILTERDATA }}
+    ];
+
+    public function filterKeyword($value)
+    {
+        return $this->builder
+            ->where(function ($query) use ($value) {
+                $query->where('name', 'like', '%' . $value . '%')
+                    ->orWhere('title', 'like', '%' . $value . '%');
+            });
+    }
+}

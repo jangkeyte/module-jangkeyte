@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Authetication\src\Repositories;
+namespace Modules\JangKeyte\src\Repositories;
 
 use Exception;
 use Illuminate\Database\Eloquent\Model;
@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Interface BaseRepositoryInterface
  *
- * @package App\Repositories
+ * @package Modules\JangKeyte\src\Repositories
  */
 interface RepositoryInterface
 {
@@ -38,7 +38,7 @@ interface RepositoryInterface
      * @param array $data
      * @return mixed
      */
-    public function update($id, array $data);
+    public function update($request);
 
     /**
      * Delete an object

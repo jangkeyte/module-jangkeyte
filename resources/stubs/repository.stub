@@ -1,0 +1,67 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Repositories\{{ MODELNAME }};
+
+use Modules\{{ MODULENAME }}\src\Models\{{ MODELNAME }};
+use Modules\{{ MODULENAME }}\src\Filters\{{ MODELNAME }}Filter;
+use Modules\{{ MODULENAME }}\src\Repositories\BaseRepository;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+use Modules\{{ MODULENAME }}\src\Exports\{{ MODELNAME }}Export;
+use Maatwebsite\Excel\Facades\Excel;
+
+class {{ MODELNAME }}Repository extends BaseRepository implements {{ MODELNAME }}RepositoryInterface
+{
+    protected $model;
+
+    public function __construct({{ MODELNAME }} $model)
+    {
+        parent::__construct($model);
+    }
+
+    public function update($request)
+    {
+        try {
+            DB::transaction(function () use ($request) {
+
+                $obj = $this->model->where('id', $request->id)->firstOrNew();
+
+                if($request->hasFile('image')) {
+
+                    if(is_file(public_path('storage/uploads/{{ MODEL }}/' . $obj->image))) {
+                        unlink(public_path('storage/uploads/{{ MODEL }}/' . $obj->image));
+                    }
+
+                    $ext = $request->file('image')->extension();
+                    $final_name = '{{ MODEL }}_' . time() . '.' . $ext;
+
+                    $request->file('image')->move(public_path('storage/uploads/{{ MODEL }}/'), $final_name);
+
+                    $obj->image = $final_name;
+                }
+
+                {{ CODE }}
+                $obj->save();
+
+            });            
+        } catch (\Exception $e) {
+            
+            Log::error('Update failed', ['exception' => $e->getMessage()]);
+            return redirect()->route('{{ MODEL }}_index')->with('warning', __('There is some error in {{ MODEL }} step.'));
+        }
+    }
+
+    /**
+     * Export all {{ MODEL }}
+     *
+     * @return list of item in excel file
+     */
+    public function export()
+    {
+        return Excel::download(new {{ MODELNAME }}Export, '{{ MODEL }}s.xlsx');
+    }
+}

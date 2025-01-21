@@ -1,0 +1,34 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Exports;
+
+use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Route;
+
+use Modules\{{ MODULENAME }}\src\Models\{{ MODELNAME }};
+use Modules\{{ MODULENAME }}\src\Filters\{{ MODELNAME }}Filter;
+use Maatwebsite\Excel\Concerns\FromView;
+
+class {{ MODELNAME }}Export implements FromView
+{
+    //private $id;
+    private $request;
+
+    public function __construct(Request $request=null) {
+    	$this->request = $request;
+    }
+
+    /**
+    * @return \Illuminate\Support\Collection
+    */
+    public function view(): View
+    {
+        $data = {{ MODELNAME }}::orderBy('created_at')->get();
+        
+        return view('{{ MODULENAME }}::{{ MODEL }}.export', [
+            'data' => $data,
+        ]);
+    }
+
+}

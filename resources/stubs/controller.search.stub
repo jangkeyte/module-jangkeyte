@@ -1,0 +1,31 @@
+<?php
+
+namespace Modules\{{ MODULENAME }}\src\Http\Controllers\{{ MODELNAME }};
+
+use App\Http\Controllers\Controller;
+use Modules\{{ MODULENAME }}\src\Http\Requests\{{ MODELNAME }}\Search{{ MODELNAME }}Request;
+use Modules\{{ MODULENAME }}\src\Repositories\{{ MODELNAME }}\{{ MODELNAME }}RepositoryInterface;
+
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class Search{{ MODELNAME }}Controller extends Controller
+{
+    private ${{ MODEL }}Repository;
+
+    public function __construct({{ MODELNAME }}RepositoryInterface ${{ MODEL }}Repository)
+    {
+        $this->{{ MODEL }}Repository = ${{ MODEL }}Repository;
+    }
+    
+    public function create()
+    {
+        return "<h1>This is search page.</h1>";
+    }
+
+    public function store(Search{{ MODELNAME }}Request $request)
+    {
+        $data = $this->{{ MODEL }}Repository->search($request);
+        return view('{{ MODULENAME }}::{{ MODEL }}.index', compact('data'));
+    }
+}

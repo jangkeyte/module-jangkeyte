@@ -1,8 +1,8 @@
 <?php
 
-namespace Modules\Authetication\src\Filters;
+namespace Modules\TripBooking\src\Filters;
 
-use Modules\Authetication\src\Helpers\Common\StringHelper;
+use App\Helpers\Common\StringHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -32,7 +32,7 @@ class QueryFilter
     /**
      * @var string|null
      */
-    protected $orderFields = null;
+    protected $orderField = null;
 
     /**
      * @var string
