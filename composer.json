@@ -1,5 +1,5 @@
 {
-    "name": "jangkeyte/authetication",
+    "name": "jangkeyte/jangkeyte",
     "type": "package",
     "description": "The authetication module with roles and permission",
     "keywords": ["module", "package"],
@@ -11,13 +11,11 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "jangkeyte/jangkeyte": "1.0"
+        "php": "^8.1"
     },
     "autoload": {
         "psr-4": {
-            "Modules\\Authetication\\Database\\Factories\\": "database/factories/",
-            "Modules\\Authetication\\Database\\Seeders\\": "database/seeders/"
+            "Modules\\Jangkeyte\\": "src/"
         }
     },
     "minimum-stability": "stable",
