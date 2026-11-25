@@ -1,117 +1,143 @@
 <?php
 
-namespace Modules\Authetication\src\Http\Controllers\User;
-use Modules\Authetication\src\Http\Controllers\Controller;
+namespace JangKeyte\Http\Controllers\User;
 
-use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Socialite\Facades\Socialite;
-use Modules\Authetication\src\Repositories\User\UserRepositoryInterface;
-use Modules\Authetication\src\Repositories\Permission\PermissionRepositoryInterface;
-/*
-use Modules\Authetication\src\Models\User;
-use Modules\Authetication\src\Http\Requests\Auth\LoginRequest;
-use Modules\Authetication\src\Providers\RouteServiceProvider;
-*/
+use JangKeyte\Filters\UserFilter;
+use JangKeyte\Http\Requests\User\SaveUserRequest;
+use JangKeyte\Repositories\Permission\PermissionRepositoryInterface;
+use JangKeyte\Repositories\Role\RoleRepositoryInterface;
+use JangKeyte\Repositories\User\UserRepositoryInterface;
+use JangKeyte\Services\FileUploadService;
+
 class UserController extends Controller
 {
-    /**
-     * @var UserRepositoryInterface
-     */
-    protected $userRepository;
-    protected $permissionRepository;
+    public function __construct(
+        protected UserRepositoryInterface $userRepository,
+        protected RoleRepositoryInterface $roleRepository,
+        protected PermissionRepositoryInterface $permissionRepository,
+        protected FileUploadService $fileUploadService,
+    ) {}
 
-    /**
-     * UserController constructor.
-     * 
-     * @param UserRepositoryInterface $userRepository
-     */
-    public function __construct(UserRepositoryInterface $userRepository, PermissionRepositoryInterface $permissionRepository)
+    public function index(Request $request): View
     {
-        //$this->middleware('admin'); 
-        $this->userRepository = $userRepository;
-        $this->permissionRepository = $permissionRepository;
+        $users = $request->filled('keyword')
+            ? $this->userRepository->filter(new UserFilter($request), 20)
+            : $this->userRepository->paginateWithRoles(20);
+
+        return view('JangKeyte::user.index', compact('users'));
     }
 
-    /**
-     * Display the dashboard view.
-     */
-    public function create(Request $request): View
+    public function show(int $id): View
     {
-        $users = $this->userRepository->all();
-        
-        if (view()->exists('Authetication::user.home')) {
-            return view('Authetication::user.home', [
-                'users' => $users,
-            ]);
+        $user = $this->userRepository->findOrFail($id);
+        $user->load('roles.permissions', 'permissions');
+        $groupedPermissions = $this->permissionRepository->allOrdered()->groupBy('group');
+
+        return view('JangKeyte::user.detail', compact('user', 'groupedPermissions'));
+    }
+
+    public function create(): View
+    {
+        $user = $this->userRepository->find(null);
+        $roles = $this->roleRepository->allRoles()->pluck('name', 'id');
+
+        return view('JangKeyte::user.form', compact('user', 'roles'));
+    }
+
+    public function store(SaveUserRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $photo = 'default.png';
+
+        if ($request->hasFile('image')) {
+            $photo = $this->fileUploadService->uploadPublic($request->file('image'), 'users');
         }
+
+        DB::transaction(function () use ($validated, $photo): void {
+            $user = $this->userRepository->create([
+                'name' => $validated['name'],
+                'username' => $validated['username'] ?? $validated['email'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'photo' => $photo,
+            ]);
+
+            if (! empty($validated['role'])) {
+                $user->roles()->sync([(int) $validated['role']]);
+            }
+
+            if (! empty($validated['permission'])) {
+                $user->refreshPermissions($validated['permission']);
+            }
+        });
+
+        return redirect()->route('admin_user')->with('success', __('Thêm người dùng mới thành công.'));
     }
 
-    /**
-     * Display the detail view.
-     */
-    public function show($id): View
+    public function edit(int $id): View
     {
-        $user = $this->userRepository->find($id);
-        $permissions = $this->permissionRepository->all();
-        
-        return view('Authetication::user.detail', [
-            'user' => $user,
-            'permissions' => $permissions,
-        ]);
+        $user = $this->userRepository->findOrFail($id);
+        $user->load('roles');
+        $roles = $this->roleRepository->allRoles()->pluck('name', 'id');
+
+        return view('JangKeyte::user.form', compact('user', 'roles'));
     }
 
-    /**
-     * Display the detail view.
-     */
-    public function destroy($id): RedirectResponse
+    public function update(SaveUserRequest $request, int $id): RedirectResponse
     {
-        $data = $this->userRepository->delete($id);
-        return redirect()->route('user')->with('message', 'Xóa tài khoản thành công');
+        $validated = $request->validated();
+        $existing = $this->userRepository->findOrFail($id);
+
+        $data = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+        ];
+
+        if (! empty($validated['username'])) {
+            $data['username'] = $validated['username'];
+        }
+
+        if (! empty($validated['password'])) {
+            $data['password'] = Hash::make($validated['password']);
+        }
+
+        if ($request->hasFile('image')) {
+            $data['photo'] = $this->fileUploadService->uploadPublic(
+                $request->file('image'),
+                'users',
+                $existing->photo
+            );
+        }
+
+        DB::transaction(function () use ($id, $data, $validated): void {
+            $user = $this->userRepository->update($id, $data);
+
+            if (! empty($validated['role'])) {
+                $user->roles()->sync([(int) $validated['role']]);
+            }
+
+            if (isset($validated['permission'])) {
+                $user->refreshPermissions($validated['permission']);
+            }
+        });
+
+        return redirect()->route('admin_user')->with('success', __('Cập nhật tài khoản thành công.'));
     }
 
-    /**
-     * Display the change password view.
-     */
-    public function changepwd()
+    public function destroy(Request $request, int $id): RedirectResponse
     {
-        return view('Authetication::user.changepwd');
-    }
+        if ((int) $request->user()?->id === $id) {
+            return redirect()->route('admin_user')->with('error', __('Không thể tự xóa tài khoản đang đăng nhập.'));
+        }
 
-    /**
-     * Display the update profile view.
-     */
-    public function update()
-    {
-        return view('Authetication::user.update');
-    }
+        $this->userRepository->delete($id);
 
-    /**
-     * Display the login view.
-     */
-    public function login()
-    {
-        return view('Authetication::user.login');
-    }
-
-    /**
-     * Destroy an authenticated session.
-     */
-    public function logout(Request $request): RedirectResponse
-    {
-        // Đăng xuất khỏi ứng dụng
-        Auth::guard('web')->logout();
-
-        // Hủy session hiện tại
-        $request->session()->invalidate();
-
-        // Tạo token mới cho session
-        $request->session()->regenerateToken();
-
-        // Chuyển hướng đến trang chủ
-        return redirect('/');
+        return redirect()->route('admin_user')->with('success', __('Xóa tài khoản thành công.'));
     }
 }

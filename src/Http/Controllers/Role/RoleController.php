@@ -1,141 +1,106 @@
 <?php
 
-namespace Modules\Authetication\src\Http\Controllers\Role;
+namespace JangKeyte\Http\Controllers\Role;
 
-use Modules\Authetication\src\Http\Controllers\Controller;
-use Modules\Authetication\src\Models\Permission;
-use Modules\Authetication\src\Models\Role;
-use Modules\Authetication\src\Models\User;
-use Modules\Authetication\src\Repositories\User\UserRepositoryInterface;
-use Modules\Authetication\src\Repositories\Role\RoleRepositoryInterface;
-use Modules\Authetication\src\Repositories\Permission\PermissionRepositoryInterface;
-use Illuminate\View\View;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\Rule;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use JangKeyte\Http\Requests\Role\SaveRoleRequest;
+use JangKeyte\Models\Permission;
+use JangKeyte\Repositories\Permission\PermissionRepositoryInterface;
+use JangKeyte\Repositories\Role\RoleRepositoryInterface;
+use JangKeyte\Services\PermissionRegistrar;
 
 class RoleController extends Controller
-{   
-    protected $roleRepository;
-    protected $permissionRepository;
+{
+    public function __construct(
+        protected RoleRepositoryInterface $roleRepository,
+        protected PermissionRepositoryInterface $permissionRepository,
+        protected PermissionRegistrar $permissionRegistrar,
+    ) {}
 
-    public function __construct(RoleRepositoryInterface $roleRepository, PermissionRepositoryInterface $permissionRepository)
+    public function index(): View
     {
-        $this->roleRepository = $roleRepository;
-        $this->permissionRepository = $permissionRepository;
+        $roles = $this->roleRepository->allRoles();
+
+        return view('JangKeyte::role.index', compact('roles'));
     }
 
-    public function index1()
+    public function create(): View
     {
-        $roles = $this->roleRepository->all();
-        $permissions = $this->permissionRepository->all();     
-        $objects = array(
-            'user'              => 'User',
-            'role'              => 'Role',
-            'post'              => 'Post', 
-            'company'           => 'Company', 
-            'company-location'  => 'Company Location',
-            'company-ndustry'   => 'Company Industry',
-            'company-size'      => 'Company Size',
-            'candidate'         => 'Candidate',
-            'job'               => 'Job',  
-            'job-category'      => 'Job Category',
-            'job-location'      => 'Job Location',
-            'job-type'          => 'Job Type',
-            'job-experience'    => 'Job Experience',
-            'job-gender'        => 'Job Gender',
-            'job-salary-range'  => 'Job Salary Range',
-            'setting'           => 'Setting',
-            'package'           => 'Package',
-            'banner'            => 'Banner',
-            'subsciber'         => 'Subsciber',
-            'advertisement'     => 'Advertisement',
-            'testimonial'       => 'Testimonial',
-            'faq'               => 'Faq',
-            'why-choose'        => 'Why Choose',
-            'home-page'         => 'Home Page',
-        );
+        $role = $this->roleRepository->find(null);
+        $groupedPermissions = $this->permissionRepository->allOrdered()->groupBy('group');
+        $selectedPermissions = [];
 
-        return view('Authetication::role.dashboard', [
-            'roles' => $roles,
-            'permissions' => $permissions,
-            'objects' => $objects,
-        ]);
-    }
-    
-    public function index()
-    {
-        $roles = $this->roleRepository->all();
-        return view('Authetication::role.dashboard', compact('roles'));
+        return view('JangKeyte::role.form', compact('role', 'groupedPermissions', 'selectedPermissions'));
     }
 
-    public function create()
+    public function store(SaveRoleRequest $request): RedirectResponse
     {
-        $roles = $this->roleRepository->all();
-        $permissions = $this->permissionRepository->all();        
-        $objects = array(
-            'user'              => 'User',
-            'role'              => 'Role',
-            'post'              => 'Post', 
-            'company'           => 'Company', 
-            'company-location'  => 'Company Location',
-            'company-ndustry'   => 'Company Industry',
-            'company-size'      => 'Company Size',
-            'candidate'         => 'Candidate',
-            'job'               => 'Job',  
-            'job-category'      => 'Job Category',
-            'job-location'      => 'Job Location',
-            'job-type'          => 'Job Type',
-            'job-experience'    => 'Job Experience',
-            'job-gender'        => 'Job Gender',
-            'job-salary-range'  => 'Job Salary Range',
-            'setting'           => 'Setting',
-            'package'           => 'Package',
-            'banner'            => 'Banner',
-            'subsciber'         => 'Subsciber',
-            'advertisement'     => 'Advertisement',
-            'testimonial'       => 'Testimonial',
-            'faq'               => 'Faq',
-            'why-choose'        => 'Why Choose',
-            'home-page'         => 'Home Page',
-        );
+        $validated = $request->validated();
 
-        return view('Authetication::role.create', [
-            'roles' => $roles,
-            'permissions' => $permissions,
-            'objects' => $objects,
-        ]);
+        DB::transaction(function () use ($validated): void {
+            $role = $this->roleRepository->create([
+                'name' => $validated['name'],
+                'slug' => $validated['slug'],
+                'description' => $validated['description'] ?? '',
+                'code' => $validated['code'] ?: 'secondary',
+            ]);
+
+            if (! empty($validated['permission'])) {
+                $ids = Permission::whereIn('slug', $validated['permission'])->pluck('id')->all();
+                $role->permissions()->sync($ids);
+            }
+        });
+
+        $this->permissionRegistrar->forgetCachedPermissions();
+
+        return redirect()->route('admin_role')->with('success', __('Tạo vai trò mới thành công.'));
     }
 
-    public function store(Request $request)
+    public function edit(int $id): View
     {
-        $request->validate([            
-            'name' => 'required',
-            'slug' => 'required|alpha_dash|unique:posts',
-            'description' => 'required',
-            'code' => 'required',
-        ]);
+        $role = $this->roleRepository->findOrFail($id);
+        $groupedPermissions = $this->permissionRepository->allOrdered()->groupBy('group');
+        $selectedPermissions = $role->permissions()->pluck('slug')->all();
 
-        $obj = new Role();
-        
-        $obj->name = $request->name;
-        $obj->slug = $request->slug;
-        $obj->description = $request->description;
-        $obj->code = $request->code;
-        $obj->save();
+        return view('JangKeyte::role.form', compact('role', 'groupedPermissions', 'selectedPermissions'));
+    }
 
-        foreach($request->permission as $permission) {            
-            $new_permission = Permission::where('slug', $permission)->first();
-            $obj->permissions()->attach($new_permission);
+    public function update(SaveRoleRequest $request, int $id): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($id, $validated): void {
+            $role = $this->roleRepository->update($id, [
+                'name' => $validated['name'],
+                'slug' => $validated['slug'],
+                'description' => $validated['description'] ?? '',
+                'code' => $validated['code'] ?: 'secondary',
+            ]);
+
+            $ids = ! empty($validated['permission'])
+                ? Permission::whereIn('slug', $validated['permission'])->pluck('id')->all()
+                : [];
+            $role->permissions()->sync($ids);
+        });
+
+        $this->permissionRegistrar->forgetCachedPermissions();
+
+        return redirect()->route('admin_role')->with('success', __('Cập nhật vai trò thành công.'));
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $role = $this->roleRepository->findOrFail($id);
+        if (in_array($role->slug, ['administrator', 'admin'], true)) {
+            return redirect()->route('admin_role')->with('error', __('Không thể xóa vai trò hệ thống gốc.'));
         }
 
-        return redirect()->route('admin_role')->with('success', __('Data is saved successfully.'));
-    }
-    
-    public function delete($id)
-    {
-        $role_single = Role::where('id', $id)->first();
-        Role::where('id', $id)->delete();
-        return redirect()->route('admin_role')->with('success', __('Data is deleted successfully.'));
+        $this->roleRepository->delete($id);
+        $this->permissionRegistrar->forgetCachedPermissions();
+
+        return redirect()->route('admin_role')->with('success', __('Xóa vai trò thành công.'));
     }
 }

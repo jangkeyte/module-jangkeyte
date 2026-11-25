@@ -1,98 +1,53 @@
 <?php
 
-namespace Modules\TripBooking\src\Filters;
+namespace JangKeyte\Filters;
 
-use App\Helpers\Common\StringHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class QueryFilter
+abstract class QueryFilter
 {
-    /**
-     * @var Request
-     */
-    public $request;
+    protected Request $request;
 
-    /**
-     * @var array
-     */
-    protected $filters;
+    protected Builder $builder;
 
-    /**
-     * @var array
-     */
-    protected $search = [];
+    protected string $delimiter = ',';
 
-    /**
-     * @var $builder
-     */
-    protected $builder;
-
-    /**
-     * @var string|null
-     */
-    protected $orderField = null;
-
-    /**
-     * @var string
-     */
-    protected $orderType = 'desc';
-
-    /**
-     * @var $filterable
-     */
-    protected $filterable;
-
-    /**
-     * QueryFilter constructor.
-     * @param Request $request
-     */
     public function __construct(Request $request)
     {
         $this->request = $request;
-        $this->filters = $this->request->all();
     }
 
-    /**
-     * @param Builder $builder
-     * @param array $filterFields
-     * @param array $orderFields
-     * @return Builder
-     */
-    public function apply(Builder $builder, array $filterFields, array $orderFields = [])
+    public function apply(Builder $builder): Builder
     {
         $this->builder = $builder;
-        $this->orderFields = $orderFields;
 
-        foreach ($this->filters as $name => $value)
-        {
-            $method = 'filter' . Str::studly($name);
-
-            if (is_null($value) || $value == '') {
+        foreach ($this->filters() as $name => $value) {
+            if ($value === null || $value === '') {
                 continue;
             }
 
+            $method = Str::camel($name);
             if (method_exists($this, $method)) {
-                $this->{$method}($value);
-                continue;
-            }
-
-            if (empty($this->filterable) || !is_array($this->filterable)) {
-                continue;
-            }
-
-            if (in_array($name, $this->filterable)) {
-                $this->builder->where($name, $value);
-                continue;
-            }
-
-            if (key_exists($name, $this->filterable)) {
-                $this->builder->where($this->filterable[$name], $value);
-                continue;
+                $this->{$method}($this->paramToArray($value));
             }
         }
 
         return $this->builder;
+    }
+
+    public function filters(): array
+    {
+        return $this->request->query();
+    }
+
+    protected function paramToArray(mixed $param): mixed
+    {
+        if (is_string($param) && str_contains($param, $this->delimiter)) {
+            return explode($this->delimiter, $param);
+        }
+
+        return $param;
     }
 }

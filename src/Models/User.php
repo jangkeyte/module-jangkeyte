@@ -1,55 +1,46 @@
 <?php
 
-namespace Modules\Authetication\src\Models;
+namespace JangKeyte\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Modules\Authetication\src\Traits\Filterable;
-use Modules\Authetication\src\Traits\HasPermissionsTrait;
+use Illuminate\Support\Str;
+use JangKeyte\Traits\Filterable;
+use JangKeyte\Traits\HasPermissionsTrait;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Filterable, Notifiable, HasPermissionsTrait;
+    use Filterable, HasFactory, HasPermissionsTrait, Notifiable, SoftDeletes;
 
     protected $table = 'users';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'uid',
-        'username',
-        'name',
-        'email',
-        'password',
-        'photo',
-        'provider', 
-        'provider_id',
-        'token',
-    ];
+    protected $guarded = ['id'];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
+        'token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $user): void {
+            if (empty($user->uid)) {
+                $user->uid = (string) Str::uuid();
+            }
+            if (empty($user->photo)) {
+                $user->photo = 'default.png';
+            }
+        });
+    }
 }

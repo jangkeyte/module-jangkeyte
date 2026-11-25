@@ -1,46 +1,20 @@
 <?php
 
-namespace Modules\Authetication\src\Repositories\Role;
+namespace JangKeyte\Repositories\Role;
 
-use Modules\Authetication\src\Models\Role;
-use Modules\Authetication\src\Models\User;
-use Modules\Authetication\src\Repositories\BaseRepository;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Collection;
+use JangKeyte\Models\Role;
+use JangKeyte\Repositories\BaseRepository;
 
 class RoleRepository extends BaseRepository implements RoleRepositoryInterface
 {
-    /**
-     * @var Role
-     */
-    protected $model;
-
-    /**
-     * RoleRepository constructor.
-     *
-     * @param Role $model
-     */
     public function __construct(Role $model)
     {
         parent::__construct($model);
     }
 
-    /**
-     * Create an object
-     * @param array $data
-     * @return mixed
-     */
-    public function add($user_id, $role)
+    public function allRoles(): Collection
     {
-        $user = User::where('id', $user_id);
-        return $user->roles()->attach($role);
-    }
-
-    public function firstUserRole($user_id)
-    {
-        $user = User::where('id', $user_id);
-        return $user->roles()->first();
+        return $this->model->newQuery()->withCount('permissions', 'users')->orderBy('id')->get();
     }
 }

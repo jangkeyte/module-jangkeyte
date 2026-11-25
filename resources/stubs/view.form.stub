@@ -1,0 +1,33 @@
+@extends('JangKeyte::layout.app')
+
+@section('heading', $item->exists ? __('Edit {{ HEADLINE }}') : __('Add {{ HEADLINE }}'))
+
+@section('button')
+    <a href="{{ route('{{ MODEL_SNAKE }}.index') }}" class="btn btn-outline-secondary btn-sm ms-2">
+        <i class="bi bi-arrow-left"></i> {{ __('View All') }}
+    </a>
+@endsection
+
+@section('main_content')
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ $item->exists ? route('{{ MODEL_SNAKE }}.update', $item->id) : route('{{ MODEL_SNAKE }}.store') }}" enctype="multipart/form-data">
+                @csrf
+                @if($item->exists)
+                    @method('PUT')
+                @endif
+
+{{ FORM_FIELDS }}
+
+                <div class="row mt-4">
+                    <div class="col-sm-10 offset-sm-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2-circle"></i> {{ $item->exists ? __('Update') : __('Save') }}
+                        </button>
+                        <a href="{{ route('{{ MODEL_SNAKE }}.index') }}" class="btn btn-light ms-2">{{ __('Cancel') }}</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>{{ MEDIA_PICKER_MODAL }}
+@endsection

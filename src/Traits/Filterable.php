@@ -1,14 +1,14 @@
 <?php
 
-namespace Modules\JangKeyte\src\Traits;
+namespace JangKeyte\Traits;
 
-use Modules\JangKeyte\src\Filters\QueryFilter;
 use Illuminate\Database\Eloquent\Builder;
+use JangKeyte\Filters\QueryFilter;
 
 trait Filterable
 {
-    public function scopeFilter(Builder $builder, QueryFilter $filters, array $filterFields = ['*'], array $orderFields = [])
+    public function scopeFilter(Builder $query, QueryFilter $filters): Builder
     {
-        return $filters->apply($builder, $filterFields, $orderFields);
+        return $filters->apply($query);
     }
 }

@@ -1,39 +1,34 @@
 <?php
 
-namespace Modules\Authetication\src\Http\Middleware;
+namespace JangKeyte\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
 
 class PermissionMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle($request, Closure $next, $permission, $role = null)
+    public function handle(Request $request, Closure $next, string $permission, ?string $role = null): Response
     {
-        $have_permission = false;
-        $permissions = explode("|", $permission);
-        foreach ($permissions as $user_permission) {
-            if($request->user()->can($user_permission)) {
-                $have_permission = true;
+        $user = $request->user();
+        if (! $user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $permissions = array_filter(array_map('trim', explode('|', $permission)));
+        foreach ($permissions as $singlePermission) {
+            if ($user->can($singlePermission)) {
+                return $next($request);
             }
         }
 
-        $can_access = false;
-        if($role != null) {
-            $roles = explode("|", $role);
-            foreach ($roles as $user_role) {
-                if($request->user()->hasRole($user_role)) {
-                    $can_access = true;
-                }    
+        if ($role !== null) {
+            $roles = array_filter(array_map('trim', explode('|', $role)));
+            if (method_exists($user, 'hasRole') && $user->hasRole(...$roles)) {
+                return $next($request);
             }
-        }        
-        
-        return $can_access || $have_permission ? $next($request) : abort(401, 'Không đủ quyền thực hiện hoặc truy cập trang này.');
+        }
+
+        abort(403, __('Không đủ quyền thực hiện hoặc truy cập trang này.'));
     }
 }

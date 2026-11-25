@@ -1,10 +1,6 @@
-<!--begin::Footer-->
-<footer class="app-footer"> 
-    <!--begin::To the end-->
-    <div class="float-end d-none d-sm-inline"><b>Version</b> 1.1.0</div> <!--end::To the end--> 
-    <!--begin::Copyright--> 
-    <strong>Copyright &copy; 2024 <a href="https://jangkeyte.com">Jang Keyte</a>.</strong> All rights reserved.
-    <!--end::Copyright-->
-</footer> <!--end::Footer-->
+<footer class="app-footer">
+    <div class="float-end d-none d-sm-inline"><b>JangKeyte Core</b> v2.1.0</div>
+    <strong>Copyright &copy; {{ date('Y') }} <a href="https://packagist.org/packages/jangkeyte/jangkeyte" class="text-decoration-none">Jang Keyte</a>.</strong> All rights reserved.
+</footer>
 
 @include('JangKeyte::layout.partials.scripts')

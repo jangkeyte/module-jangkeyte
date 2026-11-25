@@ -1,23 +1,31 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\{{ MODULENAME }}\src\Http\Controllers\{{ MODELNAME }}\{{ MODELNAME }}Controller;
-use Modules\{{ MODULENAME }}\src\Http\Controllers\{{ MODELNAME }}\Update{{ MODELNAME }}Controller;
-use Modules\{{ MODULENAME }}\src\Http\Controllers\{{ MODELNAME }}\Search{{ MODELNAME }}Controller;
+use {{ MODULE_NAMESPACE }}\Http\Controllers\{{ MODEL_NAME }}\{{ MODEL_NAME }}Controller;
 
-Route::group(['middleware' => 'locale'], function() {
-
-    /* Admin Middleware */
-    Route::middleware(['auth'])->group(function() {
-
-        // routes for {{ MODEL }}
-        Route::prefix('{{ MODEL }}')->group(function(){
-            Route::get('/', [{{ MODELNAME }}Controller::class, 'index'])->name('{{ MODEL }}_index');
-            Route::get('/search', [Search{{ MODELNAME }}Controller::class, 'create'])->name('student_looking');
-            Route::post('/search', [Search{{ MODELNAME }}Controller::class, 'store'])->name('student_search');
-            Route::get('/edit/{id?}', [Update{{ MODELNAME }}Controller::class, 'create'])->name('{{ MODEL }}_edit');
-            Route::post('update', [Update{{ MODELNAME }}Controller::class, 'store'])->name('{{ MODEL }}_update');
-            Route::get('delete/{id}', [{{ MODELNAME }}Controller::class, 'destroy'])->name('{{ MODEL }}_delete');
-        });
-    });
+Route::middleware(['auth'])->prefix('admin/{{ MODEL_KEBAB }}')->name('{{ MODEL_SNAKE }}.')->group(function (): void {
+    Route::get('/', [{{ MODEL_NAME }}Controller::class, 'index'])
+        ->middleware('permission:browse-{{ MODEL_KEBAB }}')
+        ->name('index');{{ EXPORT_ROUTE }}
+    Route::get('/create', [{{ MODEL_NAME }}Controller::class, 'create'])
+        ->middleware('permission:add-{{ MODEL_KEBAB }}')
+        ->name('create');
+    Route::post('/', [{{ MODEL_NAME }}Controller::class, 'store'])
+        ->middleware('permission:add-{{ MODEL_KEBAB }}')
+        ->name('store');
+    Route::delete('/bulk-destroy', [{{ MODEL_NAME }}Controller::class, 'bulkDestroy'])
+        ->middleware('permission:delete-{{ MODEL_KEBAB }}')
+        ->name('bulk_destroy');
+    Route::get('/{id}/edit', [{{ MODEL_NAME }}Controller::class, 'edit'])
+        ->whereNumber('id')
+        ->middleware('permission:edit-{{ MODEL_KEBAB }}')
+        ->name('edit');
+    Route::put('/{id}', [{{ MODEL_NAME }}Controller::class, 'update'])
+        ->whereNumber('id')
+        ->middleware('permission:edit-{{ MODEL_KEBAB }}')
+        ->name('update');
+    Route::delete('/{id}', [{{ MODEL_NAME }}Controller::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:delete-{{ MODEL_KEBAB }}')
+        ->name('destroy');{{ SOFT_DELETE_ROUTES }}
 });

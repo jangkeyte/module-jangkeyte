@@ -1,230 +1,205 @@
 <?php
 
-namespace Modules\JangKeyte\src\Providers;
+namespace JangKeyte\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\ServiceProvider\RouteServiceProvider;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Pagination\Paginator;
-
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Illuminate\Console\Events\CommandFinished;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Str;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ServiceProvider;
+use JangKeyte\Console\Commands\GenerateCrudCommand;
+use JangKeyte\Console\Commands\InstallCommand;
+use JangKeyte\Console\Commands\ModuleListCommand;
+use JangKeyte\Contracts\DashboardHandlerInterface;
+use JangKeyte\Contracts\ExternalAuthenticatorInterface;
+use JangKeyte\Contracts\PostLoginRedirectorInterface;
+use JangKeyte\Http\Middleware\AdminMiddleware;
+use JangKeyte\Http\Middleware\AuthenticateMiddleware;
+use JangKeyte\Http\Middleware\BuilderGuardMiddleware;
+use JangKeyte\Http\Middleware\LocaleMiddleware;
+use JangKeyte\Http\Middleware\PermissionMiddleware;
+use JangKeyte\Http\Middleware\RoleMiddleware;
+use JangKeyte\Repositories\Permission\PermissionRepository;
+use JangKeyte\Repositories\Permission\PermissionRepositoryInterface;
+use JangKeyte\Repositories\Role\RoleRepository;
+use JangKeyte\Repositories\Role\RoleRepositoryInterface;
+use JangKeyte\Repositories\User\UserRepository;
+use JangKeyte\Repositories\User\UserRepositoryInterface;
+use JangKeyte\Services\DefaultDashboardHandler;
+use JangKeyte\Services\DefaultPostLoginRedirector;
+use JangKeyte\Services\Generator\CrudGeneratorService;
+use JangKeyte\Services\Generator\ModelDiscoveryService;
+use JangKeyte\Services\MediaService;
+use JangKeyte\Services\ModuleStudioService;
+use JangKeyte\Services\NullExternalAuthenticator;
+use JangKeyte\Services\PermissionRegistrar;
+use JangKeyte\Services\SettingService;
+use JangKeyte\Support\MenuRegistry;
+use JangKeyte\Support\ModuleLoader;
+use JangKeyte\Support\StubGenerator;
 
 class JangKeyteServiceProvider extends ServiceProvider
 {
-    /**
-     * The path to the "home" route for your application.
-     *
-     * Typically, users are redirected here after authentication.
-     *
-     * @var string
-     */
-    private $MODULE_NAME = 'JangKeyte';
-    private $module_path = __DIR__ . '/../../';
-    protected $seeds_path = 'Modules\JangKeyte\Database\Seeders';
-    
-    public function register() 
-    { 
-        // Khai báo middleware
-        $this->load_middleware($this->module_path, $this->MODULE_NAME);
-
-        // Khai báo config
-        $this->load_config($this->module_path, $this->MODULE_NAME);
-
-        // Bind repository cho module $MODULE_NAME
-        $this->load_repository();
-    }
-
-    public function boot()
+    public function register(): void
     {
-        Paginator::useBootstrap();
+        $packageRoot = dirname(__DIR__, 2);
 
-        // Khai báo blade
-        Blade::componentNamespace('Modules\\' . $this->MODULE_NAME . '\\src\\View\\Components', strtolower($this->MODULE_NAME));
-        
-        // Khai báo routes
-        $this->load_route($this->module_path);
+        $this->mergeConfigFrom($packageRoot . '/config/jangkeyte.php', 'jangkeyte');
 
-        // Khai báo views
-        $this->load_view($this->module_path, $this->MODULE_NAME);
-    
-        // Khai báo migration
-        $this->load_migration($this->module_path);
+        // Core Singletons & Default Extensible Contracts
+        $this->app->singleton(MenuRegistry::class);
+        $this->app->singleton(ModuleLoader::class);
+        $this->app->singleton(StubGenerator::class);
+        $this->app->singleton(PermissionRegistrar::class);
+        $this->app->singleton(SettingService::class);
+        $this->app->singleton(MediaService::class);
+        $this->app->singleton(ModelDiscoveryService::class);
+        $this->app->singleton(CrudGeneratorService::class);
+        $this->app->singleton(ModuleStudioService::class);
 
-        // Khai báo languages
-        $this->load_language($this->module_path, $this->MODULE_NAME);
-    
-        // Khai báo helpers
-        $this->load_helper($this->module_path);
+        $this->app->bindIf(ExternalAuthenticatorInterface::class, NullExternalAuthenticator::class);
+        $this->app->bindIf(PostLoginRedirectorInterface::class, DefaultPostLoginRedirector::class);
+        $this->app->bindIf(DashboardHandlerInterface::class, DefaultDashboardHandler::class);
 
-        // Khai báo commands
-        $this->load_command($this->MODULE_NAME);
+        // Core RBAC Repositories
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
+        $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
 
-        // Khai báo observer
-        $this->load_observer();
-        
-        // Khai báo seeders
-        $this->load_seeder();
-    }
-    
-    public function load_config($path, $module) {
-        
-        if (File::exists( $path . 'config' )) {
-            //to published this config: php artisan vendor:publish --provider="Modules\JangKeyte\src\Providers\JangKeyteServiceProvider" --tag=config --force
-            $config_dir = File::allFiles( $path . 'config' );            
-            foreach ( $config_dir as $value ) {
-                $this->publishes([
-                    $value->getPathName() => config_path($value->getFileName()),
-                ], 'config');
-                $this->mergeConfigFrom(
-                    $value->getPathName(), str_replace($value->getExtension(), '', $value->getFileName())
-                );
-            }
-        } 
+        // Register all enabled Domain Modules in modules/*
+        $this->registerEnabledModules();
     }
 
-    public function load_repository() {
-        if (File::exists( $this->module_path . 'src\Models' )) {
-            $model_dir = File::allFiles( $this->module_path . 'src\Models' ); 
-            foreach ( $model_dir as $value ) {
-                $model_name = str_replace('.' . $value->getExtension(), '', $value->getFileName());
-                $this->app->bind(
-                    'Modules\\' . $this->MODULE_NAME . '\\src\\Repositories\\' . $model_name . '\\' . $model_name . 'RepositoryInterface',
-                    'Modules\\' . $this->MODULE_NAME . '\\src\\Repositories\\' . $model_name . '\\' . $model_name . 'Repository'
-                );
-            }
-        } 
-    }
+    public function boot(Router $router, PermissionRegistrar $permissionRegistrar, MenuRegistry $menuRegistry): void
+    {
+        $packageRoot = dirname(__DIR__, 2);
 
-    public function load_middleware($path, $module) {
-        $middleare = [
-            $module =>   __DIR__ . '\\' . $module . '\\src\\Http\\Controllers\Middlewares\\' . $module . 'Middleware',
-        ];
-        foreach ($middleare as $key => $value) {
-            $this->app['router']->pushMiddlewareToGroup($key, $value);
-        }           
-    }
+        Paginator::useBootstrapFive();
 
-    public function load_route($path) {     
-        if (File::exists( $path . 'routes' )) {
-            // Tất cả files có tại thư mục routes
-            $route_dir = File::allFiles( $path . 'routes' );
-            foreach ( $route_dir as $key => $value ) {
-                $file = $value->getPathName();                
-                $this->loadRoutesFrom( $file );
-            }            
-        }        
-    }
+        // Register Middleware Aliases safely without overriding Laravel's 'web' group
+        $router->aliasMiddleware('auth', AuthenticateMiddleware::class);
+        $router->aliasMiddleware('user', AuthenticateMiddleware::class);
+        $router->aliasMiddleware('admin', AdminMiddleware::class);
+        $router->aliasMiddleware('role', RoleMiddleware::class);
+        $router->aliasMiddleware('permission', PermissionMiddleware::class);
+        $router->aliasMiddleware('locale', LocaleMiddleware::class);
+        $router->aliasMiddleware('jangkeyte.builder', BuilderGuardMiddleware::class);
 
-    public function load_view($path, $module) {        
-        if (File::exists( $path . 'resources/views')) {
-            // Để gọi view thì ta sử dụng namespace ở phía trước, ví dụ module Demo: view('Demo::index'), @extends('Demo::index'), @include('Demo::index')
-            $this->loadViewsFrom( $path . 'resources/views', $module );
-        }
-        $this->publishes([
-            $path . 'resources/views' => resource_path("views"),
-            $path . 'resources/assets' => public_path("assets")
-        ]);
-    }
+        // Views & Blade Component Namespaces (JangKeyte primary + backward-compatible aliases)
+        $viewsPath = $packageRoot . '/resources/views';
+        $this->loadViewsFrom($viewsPath, 'JangKeyte');
+        $this->loadViewsFrom($viewsPath, 'Authentication');
+        $this->loadViewsFrom($viewsPath, 'Authetication');
 
-    public function load_migration($path) {        
-        if (File::exists( $path . 'database/migrations' )) {
-            // Toàn bộ file migration của modules sẽ tự động được load
-            $this->loadMigrationsFrom( $path . 'database/migrations');
-        }
-    }
+        Blade::componentNamespace('JangKeyte\\View\\Components', 'jangkeyte');
+        Blade::componentNamespace('JangKeyte\\View\\Components', 'authentication');
+        Blade::componentNamespace('JangKeyte\\View\\Components', 'authetication');
+        Blade::anonymousComponentPath($viewsPath . '/components', 'jangkeyte');
 
-    public function load_language($path, $module) {        
-        if (File::exists( $path . 'resources/lang' )) {
-            // Đa ngôn ngữ theo file php
-            // Dùng đa ngôn ngữ tại file php resources/lang/en/general.php : @lang('Demo::general.hello')
-            $this->loadTranslationsFrom( $path . 'resources/lang', $module );
-            // Đa ngôn ngữ theo file json
-            $this->loadJSONTranslationsFrom( $path . 'resources/lang');
-        }
-    }
+        // Blade RBAC Directives
+        Blade::directive('role', fn ($role) => "<?php if(auth()->check() && auth()->user()->hasRole({$role})): ?>");
+        Blade::directive('endrole', fn () => '<?php endif; ?>');
+        Blade::directive('permission', fn ($perm) => "<?php if(auth()->check() && auth()->user()->can({$perm})): ?>");
+        Blade::directive('endpermission', fn () => '<?php endif; ?>');
 
-    public function load_helper($path) {        
-        if (File::exists( $path . 'helpers' )) {
-            // khai báo helpers
-            foreach (glob($path . 'helpers/*.php') as $file) {
-                require_once($file);
-            }
-            
-            /*
-            // Tất cả files có tại thư mục helpers
-            $helper_dir = File::allFiles( $path . 'helpers' );
-            foreach ( $helper_dir as $key => $value ) {
-                $file = $value->getPathName();
-                require $file;
-            }
-            */
-        }
-    }
+        // Cached RBAC Gates
+        $permissionRegistrar->registerGates();
 
-    public function load_command($module) {        
-        // Khai báo commands
-        $this->commands([
-            // namespace của commands đặt tại đây
-            '\\Modules\\' . $module . '\\src\\Http\\Commands\\' . $module . 'Command'
-        ]);
-    }
+        // Core Routes, Migrations & Translations
+        $this->loadRoutesFrom($packageRoot . '/routes/web.php');
+        $this->loadMigrationsFrom($packageRoot . '/database/migrations');
+        $this->loadJsonTranslationsFrom($packageRoot . '/resources/lang');
 
-    public function load_observer() {        
-        //Customer::observe(CustomerObserver::class);
-    }
-    
-    public function load_seeder() {
+        // Register Default Core Sidebar Menu Items
+        $this->registerCoreMenus($menuRegistry);
+
+        // Publishables
         if ($this->app->runningInConsole()) {
-            if ($this->isConsoleCommandContains([ 'db:seed', '--seed' ], [ '--class', 'help', '-h' ])) {
-                $this->addSeedsAfterConsoleCommandFinished();
-            }
+            $this->publishes([
+                $packageRoot . '/config/jangkeyte.php' => config_path('jangkeyte.php'),
+            ], 'jangkeyte-config');
+
+            $this->publishes([
+                $packageRoot . '/resources/assets' => public_path('assets'),
+            ], 'jangkeyte-assets');
+
+            $this->commands([
+                InstallCommand::class,
+                GenerateCrudCommand::class,
+                ModuleListCommand::class,
+            ]);
         }
-    }
-    
-    /**
-     * Get a value that indicates whether the current command in console
-     * contains a string in the specified $fields.
-     *
-     * @param string|array $contain_options
-     * @param string|array $exclude_options
-     *
-     * @return bool
-     */
-    protected function isConsoleCommandContains($contain_options, $exclude_options = null) : bool
-    {
-        $args = Request::server('argv', null);
-        if (is_array($args)) {
-            $command = implode(' ', $args);
-            if (
-                Str::contains($command, $contain_options) &&
-                ($exclude_options == null || !Str::contains($command, $exclude_options))
-            ) {
-                return true;
-            }
-        }
-        return false;
     }
 
-    /**
-     * Add seeds from the $seed_path after the current command in console finished.
-     */
-    protected function addSeedsAfterConsoleCommandFinished()
+    protected function registerEnabledModules(): void
     {
-        Event::listen(CommandFinished::class, function(CommandFinished $event) {
-            // Accept command in console only,
-            // exclude all commands from Artisan::call() method.
-            if ($event->output instanceof ConsoleOutput) {
-                addSeedsFrom($this->seeds_path);
+        /** @var ModuleLoader $loader */
+        $loader = $this->app->make(ModuleLoader::class);
+
+        foreach ($loader->enabledModules() as $module) {
+            if (class_exists($module['provider'])) {
+                $this->app->register($module['provider']);
             }
-        });
+        }
+    }
+
+    protected function registerCoreMenus(MenuRegistry $menuRegistry): void
+    {
+        $menuRegistry->register('dashboard', [
+            'label' => 'Dashboard',
+            'icon' => 'bi bi-speedometer2',
+            'route' => 'dashboard',
+            'permission' => 'browse-dashboard',
+            'active_patterns' => ['dashboard', 'admin/dashboard'],
+            'order' => 1,
+        ]);
+
+        $menuRegistry->register('media_manager', [
+            'label' => 'Media Manager',
+            'icon' => 'bi bi-images',
+            'route' => 'admin.media.index',
+            'permission' => 'browse-media',
+            'active_patterns' => ['admin/media*'],
+            'order' => 80,
+        ]);
+
+        $menuRegistry->register('module_studio', [
+            'label' => 'Module Studio',
+            'icon' => 'bi bi-cpu',
+            'route' => 'admin.modules.index',
+            'permission' => 'browse-module',
+            'active_patterns' => ['admin/modules*'],
+            'order' => 85,
+        ]);
+
+        $menuRegistry->register('users_management', [
+            'label' => 'Users',
+            'icon' => 'bi bi-person-gear',
+            'permission' => 'browse-user',
+            'active_patterns' => ['admin/user*', 'admin/role*'],
+            'order' => 90,
+            'children' => [
+                [
+                    'label' => 'All Users',
+                    'route' => 'admin_user',
+                    'permission' => 'browse-user',
+                    'active_patterns' => ['admin/user*'],
+                ],
+                [
+                    'label' => 'Roles',
+                    'route' => 'admin_role',
+                    'permission' => 'browse-role',
+                    'active_patterns' => ['admin/role*'],
+                ],
+            ],
+        ]);
+
+        $menuRegistry->register('settings', [
+            'label' => 'Settings',
+            'icon' => 'bi bi-gear',
+            'route' => 'admin.settings.index',
+            'permission' => 'browse-setting',
+            'active_patterns' => ['admin/settings*'],
+            'order' => 95,
+        ]);
     }
 }

@@ -1,0 +1,12 @@
+<?php
+
+namespace {{ MODULE_NAMESPACE }}\Providers;
+
+use JangKeyte\Support\ModuleServiceProvider;
+
+class {{ MODULE_NAME }}ServiceProvider extends ModuleServiceProvider
+{
+    protected string $moduleName = '{{ MODULE_NAME }}';
+
+    protected string $modulePath = __DIR__ . '/..';
+}

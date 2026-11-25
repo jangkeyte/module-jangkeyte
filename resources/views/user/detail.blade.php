@@ -1,129 +1,73 @@
 @extends('JangKeyte::layout.app')
 
-@section('heading', 'Dashboard')
+@section('heading', __('User Detail'))
+
+@section('button')
+    <a href="{{ route('admin_user') }}" class="btn btn-outline-secondary btn-sm ms-2">
+        <i class="bi bi-arrow-left"></i> {{ __('View All') }}
+    </a>
+    @can('edit-user')
+        <a href="{{ route('user.update', $user->id) }}" class="btn btn-primary btn-sm ms-1">
+            <i class="bi bi-pencil-square"></i> {{ __('Edit') }}
+        </a>
+    @endcan
+@endsection
 
 @section('main_content')
-
-<div class="container g-0">
-    <div class="row">
-        <div class="col-md-12 g-0">
-            @isset($user)
-            <div class="list-group list-group-flush mt-3" id="accordion">
-                <div class="card list-group-item-primary">
-                    <div class="card-header clearfix">
-                        <h4 class="mb-0 float-start">
-                            <a class="collapsed" data-bs-toggle="collapse" data-parent="#accordion" href="#userDetail" role="button" aria-expanded="false" aria-controls="userDetail">
-                                Thông tin chi tiết người dùng
-                            </a>
-                        </h4>
-                        <div class="btn-group float-end">
-                            <a href="{{ route('user.update', $user->id) }}" class="btn btn-success btn-sm"><i class="fa fa-edit"></i> Sửa</a>
-                            <a href="{!! url()->previous() !!}" class="btn btn-warning btn-sm"><i class="fa fa-arrow-left"></i> Quay lại</a>
-                        </div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <x-jangkeyte::htmls.image :name="$user->photo" object="user" :alt="$user->name" class="rounded-circle border" style="width:96px;height:96px;object-fit:cover;" />
                     </div>
-                    <div id="userDetail" class="bg-light collapse show">
-                        <div class="row g-0">
-                            <div class="col-md-3 text-center mt-md-4 my-2">
-                                @include('Authetication::templates.image', array('image' => $user->photo, 'object' => 'user', 'class' => 'img-thumbnail rounded-circle w-75'))
-                            </div>
-                            <div class="col-md-9">
-                                <table class="table table-responsive table-striped table-bordered table-hover">
-                                    <tbody>
-                                        <tr>
-                                            <td class="key">Mã định danh</td>
-                                            <td>{!! $user->uid !!}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="key" style="width:30%">Tên nhân viên</td>
-                                            <td>{!! $user->name !!}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="key">Tên tài khoản</td>
-                                            <td>{!! $user->username !!}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="key">Địa chỉ email</td>
-                                            <td>{!! $user->email !!}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="key">Ngày tạo</td>
-                                            <td>{!! $user->created_at !!}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="key">Vai trò</td>
-                                            <td>
-                                                @include('Authetication::user.elements.role_list')
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="key">Quyền hạn</td>
-                                            <td>
-                                                @include('Authetication::user.elements.permission_list')
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <h5 class="fw-bold mb-1">{{ $user->name }}</h5>
+                    <p class="text-muted mb-2">{{ $user->email }}</p>
+                    <div>
+                        @foreach($user->roles as $role)
+                            <span class="badge bg-{{ $role->code ?: 'primary' }}">{{ $role->name }}</span>
+                        @endforeach
                     </div>
                 </div>
-                <div class="card list-group-item-primary">
-                    <div class="card-header clearfix">
-                        <h4 class="mb-0 float-start">
-                            <a data-bs-toggle="collapse" data-parent="#accordion" href="#collapse2" class="collapsed" aria-expanded="false">
-                                Quyền hạn được cấp
-                            </a>
-                        </h4>
-                        <div class="btn-group float-end">
-                            <!-- <a href="/user/update/{!! $user->id !!}" class="btn btn-primary btn-sm"><i class="bx bxs-plus-square"></i> Thêm mới</a> -->
-                        </div>
-                    </div>
-                    <div id="collapse2" class="panel-collapse collapse bg-light" aria-expanded="false">
-                        <div class="panel-body">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <!--<div class="row"><div class="col-md-12"><h5>Quá trình chăm sóc cây xanh</h5></div></div>-->
-                                    <table class="table table-responsive table-striped table-bordered table-hover">
-                                        <tbody>
-                                            <tr>
-                                                <th class="w10 text-center">TT</th>
-                                                <th class="text-center">Quyền hạn</th>
-                                                <th class="text-center">Nội dung</th>
-                                                <th class="text-center">Ngày cấp</th>
-                                                <th class="w10 text-center">Sửa</th>
-                                                <th class="w10 text-center">Xóa</th>
-                                            </tr>
-                                        </tbody>
-                                            @isset($permissions)
-                                                @foreach($permissions as $permission)
-                                                    @if($user->hasPermissionTo($permission))                                           
-                                                    <tr>
-                                                        <td class="text-center">{!! $loop->index + 1 !!}</td>
-                                                        <td>{!! $permission->name !!}</td>
-                                                        <td>{!! $permission->description !!}</td>
-                                                        <td class="text-center">{!! $permission->created_at !!}</td>
-                                                        <td class="text-center"><a href="#" data-bs-toggle="modal" data-bs-target="#modifyObjectModal"><i class="fa fa-edit"></i></a></td>
-                                                        <td class="text-center"><a href="#"><i class="fa fa-trash" aria-hidden="true"></i></a></td>
-                                                    </tr>
-                                                    @endif
-                                                @endforeach
-                                            @endisset   
-                                    </table>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">UID</span>
+                        <code>{{ $user->uid }}</code>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">{{ __('Username') }}</span>
+                        <span>{{ $user->username }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">{{ __('Created At') }}</span>
+                        <span>{{ $user->created_at?->format('Y-m-d H:i') }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header fw-semibold">{{ __('Effective Permissions') }}</div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach($groupedPermissions as $group => $perms)
+                            <div class="col-md-6">
+                                <div class="border rounded p-2 h-100">
+                                    <div class="fw-semibold small border-bottom pb-1 mb-1">{{ $group }}</div>
+                                    @foreach($perms as $perm)
+                                        @if($user->hasPermissionTo($perm))
+                                            <span class="badge text-bg-success me-1 mb-1">{{ $perm->name }}</span>
+                                        @else
+                                            <span class="badge text-bg-light text-muted border me-1 mb-1">{{ $perm->name }}</span>
+                                        @endif
+                                    @endforeach
                                 </div>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
-            @else
-                <h1>Không tồn tại người dùng này</h1>
-            @endisset
-
-            @section('modals')
-                {{-- @include('Authetication::log.elements.modal') --}}
-            @stop
         </div>
-    </div>            
-</div>
-
-@stop
+    </div>
+@endsection

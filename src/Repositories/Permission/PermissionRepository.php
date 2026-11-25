@@ -1,41 +1,20 @@
 <?php
 
-namespace Modules\Authetication\src\Repositories\Permission;
+namespace JangKeyte\Repositories\Permission;
 
-use Modules\Authetication\src\Models\Permission;
-use Modules\Authetication\src\Models\User;
-use Modules\Authetication\src\Repositories\BaseRepository;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Collection;
+use JangKeyte\Models\Permission;
+use JangKeyte\Repositories\BaseRepository;
 
 class PermissionRepository extends BaseRepository implements PermissionRepositoryInterface
 {
-    /**
-     * @var Permission
-     */
-    protected $model;
-
-    /**
-     * PermissionRepository constructor.
-     *
-     * @param Permission $model
-     */
     public function __construct(Permission $model)
     {
         parent::__construct($model);
     }
 
-    /**
-     * Create an object
-     * @param array $data
-     * @return mixed
-     */
-    public function add($user_id, $role)
+    public function allOrdered(): Collection
     {
-        $user = User::where('id', $user_id);
-        return $user->roles()->attach($role);
+        return $this->model->newQuery()->orderBy('group')->orderBy('id')->get();
     }
-
 }

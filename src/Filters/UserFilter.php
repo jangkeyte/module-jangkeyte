@@ -1,18 +1,19 @@
 <?php
 
-namespace Modules\Authetication\src\Filters;
+namespace JangKeyte\Filters;
 
-use Modules\Authetication\src\Filters\QueryFilter;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserFilter extends QueryFilter
 {
-    protected $filterable = [
-        
-    ];
-    
-    public function filterKeyword($value)
+    public function keyword(mixed $value): Builder
     {
-        return $this->builder->where('name', 'like', '%' . $value . '%')
-                    ->orWhere('email', 'like', '%' . $value . '%');
+        $term = is_array($value) ? implode(' ', $value) : (string) $value;
+
+        return $this->builder->where(function (Builder $query) use ($term): void {
+            $query->where('name', 'like', "%{$term}%")
+                ->orWhere('username', 'like', "%{$term}%")
+                ->orWhere('email', 'like', "%{$term}%");
+        });
     }
 }

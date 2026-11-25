@@ -1,16 +1,30 @@
 <?php
 
-namespace Modules\{{ MODULENAME }}\src\Models;
+namespace {{ MODULE_NAMESPACE }}\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+{{ MODEL_IMPORTS }}
 
-class {{ MODELNAME }} extends Model
+class {{ MODEL_NAME }} extends Model
 {
-    use HasFactory;
+    use {{ MODEL_TRAITS }};
 
-    protected $fillable = [
-        {{ FILLABLE }}
+    protected $table = '{{ TABLE_NAME }}';
+
+    /**
+     * @var array<int, string>
+     */
+    public array $sortable = [
+        {{ SORTABLE_COLUMNS }}
     ];
 
+    protected $fillable = [
+        {{ FILLABLE_COLUMNS }}
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            {{ CAST_COLUMNS }}
+        ];
+    }{{ BELONGS_TO_RELATIONS }}
 }

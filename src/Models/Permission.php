@@ -1,9 +1,11 @@
 <?php
 
-namespace Modules\Authetication\src\Models;
+namespace JangKeyte\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use JangKeyte\Services\PermissionRegistrar;
 
 class Permission extends Model
 {
@@ -11,15 +13,28 @@ class Permission extends Model
 
     protected $table = 'permissions';
 
-    public function roles() {
+    protected $fillable = [
+        'name',
+        'slug',
+        'group',
+        'description',
+        'code',
+    ];
 
-        return $this->belongsToMany(Role::class,'roles_permissions');
-            
+    protected static function booted(): void
+    {
+        $flush = static fn () => app(PermissionRegistrar::class)->forgetCachedPermissions();
+        static::saved($flush);
+        static::deleted($flush);
     }
-     
-    public function users() {
-     
-        return $this->belongsToMany(User::class,'users_permissions');
-            
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'roles_permissions');
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'users_permissions');
     }
 }

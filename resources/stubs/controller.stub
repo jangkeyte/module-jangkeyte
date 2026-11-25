@@ -1,0 +1,66 @@
+<?php
+
+namespace {{ MODULE_NAMESPACE }}\Http\Controllers\{{ MODEL_NAME }};
+
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use JangKeyte\Http\Controllers\CoreController;
+use {{ MODULE_NAMESPACE }}\Http\Requests\{{ MODEL_NAME }}\Save{{ MODEL_NAME }}Request;
+use {{ MODULE_NAMESPACE }}\Services\{{ MODEL_NAME }}Service;{{ CONTROLLER_IMPORTS }}
+
+class {{ MODEL_NAME }}Controller extends CoreController
+{
+    public function __construct(protected {{ MODEL_NAME }}Service $service) {}
+
+    public function index(Request $request): View
+    {
+        $datas = $this->service->paginate($request, (int) config('jangkeyte.pagination.per_page', 15));
+        $isTrashed = $request->boolean('trashed');
+
+        return view('{{ MODULE_NAME }}::{{ MODEL_SNAKE }}.index', compact('datas', 'isTrashed'));
+    }
+
+    public function create(): View
+    {
+        $item = $this->service->findOrNew(null);
+        $relationOptions = $this->service->getRelationOptions();
+
+        return view('{{ MODULE_NAME }}::{{ MODEL_SNAKE }}.form', compact('item', 'relationOptions'));
+    }
+
+    public function store(Save{{ MODEL_NAME }}Request $request): RedirectResponse
+    {
+        $this->service->store($request->validated(), $request);
+
+        return redirect()
+            ->route('{{ MODEL_SNAKE }}.index')
+            ->with('success', __('Tạo mới thành công.'));
+    }
+
+    public function edit(int $id): View
+    {
+        $item = $this->service->findOrFail($id);
+        $relationOptions = $this->service->getRelationOptions();
+
+        return view('{{ MODULE_NAME }}::{{ MODEL_SNAKE }}.form', compact('item', 'relationOptions'));
+    }
+
+    public function update(Save{{ MODEL_NAME }}Request $request, int $id): RedirectResponse
+    {
+        $this->service->update($id, $request->validated(), $request);
+
+        return redirect()
+            ->route('{{ MODEL_SNAKE }}.index')
+            ->with('success', __('Cập nhật dữ liệu thành công.'));
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $this->service->delete($id);
+
+        return redirect()
+            ->route('{{ MODEL_SNAKE }}.index')
+            ->with('success', __('Xóa dữ liệu thành công.'));
+    }{{ CONTROLLER_EXTRA_METHODS }}
+}

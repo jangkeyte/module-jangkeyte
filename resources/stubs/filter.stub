@@ -1,21 +1,18 @@
 <?php
 
-namespace Modules\{{ MODULENAME }}\src\Filters;
+namespace {{ MODULE_NAMESPACE }}\Filters;
 
-use Illuminate\Support\Facades\Route;
+use Illuminate\Database\Eloquent\Builder;
+use JangKeyte\Filters\QueryFilter;
 
-class {{ MODELNAME }}Filter extends QueryFilter
+class {{ MODEL_NAME }}Filter extends QueryFilter
 {
-    protected $filterable = [
-        {{ FILTERDATA }}
-    ];
-
-    public function filterKeyword($value)
+    public function keyword(mixed $value): Builder
     {
-        return $this->builder
-            ->where(function ($query) use ($value) {
-                $query->where('name', 'like', '%' . $value . '%')
-                    ->orWhere('title', 'like', '%' . $value . '%');
-            });
+        $term = is_array($value) ? implode(' ', $value) : (string) $value;
+
+        return $this->builder->where(function (Builder $query) use ($term): void {
+            {{ FILTER_SEARCH }}
+        });
     }
 }
