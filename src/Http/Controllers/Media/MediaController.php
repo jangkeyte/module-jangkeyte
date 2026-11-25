@@ -21,7 +21,7 @@ class MediaController extends Controller
         $this->middleware('permission:delete-media')->only(['destroy']);
     }
 
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request): View|JsonResponse|RedirectResponse
     {
         $rawFolder = $request->query('folder', '');
         if (! is_string($rawFolder) && $rawFolder !== null) {
@@ -33,6 +33,12 @@ class MediaController extends Controller
         try {
             $listing = $this->mediaService->listDirectory($folder);
         } catch (InvalidArgumentException $e) {
+            if (! $this->wantsJsonResponse($request) && str_starts_with($e->getMessage(), 'Media directory does not exist:')) {
+                return redirect()
+                    ->route('admin.media.index')
+                    ->with('error', $e->getMessage());
+            }
+
             return $this->invalidPathResponse($request, $e->getMessage());
         }
 

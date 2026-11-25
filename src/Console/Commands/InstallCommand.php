@@ -36,16 +36,10 @@ class InstallCommand extends Command
             ]);
         }
 
-        // Ensure default upload directories & placeholder avatar exist
-        $defaultImage = public_path('assets/images/default.png');
-        foreach (['users', 'post', 'banner', 'activity'] as $uploadSubDir) {
-            $dir = public_path('storage/uploads/' . $uploadSubDir);
-            if (! File::isDirectory($dir)) {
-                File::makeDirectory($dir, 0755, true);
-            }
-            if (File::isFile($defaultImage) && ! File::isFile($dir . '/default.png')) {
-                File::copy($defaultImage, $dir . '/default.png');
-            }
+        // Ensure root upload directory exists without polluting Media Library with legacy folders or dummy files
+        $uploadsDir = public_path('storage/uploads/users');
+        if (! File::isDirectory($uploadsDir)) {
+            File::makeDirectory($uploadsDir, 0755, true);
         }
 
         // 2. Ensure modules directory & modules_statuses.json exist

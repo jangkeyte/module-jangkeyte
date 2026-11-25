@@ -70,18 +70,20 @@
     @can('add-media')
         <div class="card mb-3">
             <div class="card-body py-2">
-                <form method="POST" action="{{ route('admin.media.upload') }}" enctype="multipart/form-data" class="d-flex flex-wrap align-items-center gap-2">
+                <form method="POST" action="{{ route('admin.media.upload') }}" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="target_path" value="{{ $currentFolder }}">
-                    <div class="flex-grow-1" style="min-width: 240px;">
-                        <input type="file" name="files[]" id="mediaUploadFiles" class="form-control form-control-sm" multiple required @if($acceptString !== '') accept="{{ $acceptString }}" @endif>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="flex-grow-1" style="min-width: 240px;">
+                            <input type="file" name="files[]" id="mediaUploadFiles" class="form-control form-control-sm" multiple required @if($acceptString !== '') accept="{{ $acceptString }}" @endif>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm px-3">
+                            <i class="bi bi-cloud-upload me-1"></i> {{ __('Upload Files') }}
+                        </button>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="bi bi-cloud-upload me-1"></i> {{ __('Upload Files') }}
-                    </button>
-                    <span class="text-muted small">
-                        {{ implode(', ', $allowedExtensions) }} &middot; max {{ number_format($maxSizeKb / 1024, 1) }} MB
-                    </span>
+                    <div class="text-muted small mt-1">
+                        <i class="bi bi-file-earmark-check me-1"></i>{{ implode(', ', $allowedExtensions) }} &middot; max {{ number_format($maxSizeKb / 1024, 1) }} MB
+                    </div>
                 </form>
             </div>
         </div>
